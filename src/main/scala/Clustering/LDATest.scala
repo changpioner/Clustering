@@ -1,12 +1,12 @@
 package Clustering
 
 import org.apache.log4j.{Level, Logger}
-import org.apache.spark.sql.SparkSession
-
-import scala.collection.mutable
 import org.apache.spark.mllib.clustering.{DistributedLDAModel, LDA}
 import org.apache.spark.mllib.linalg.{Vector, Vectors}
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.SparkSession
+
+import scala.collection.mutable
 /**
   * Created by Namhwik on 2017/9/20.
   */
@@ -37,7 +37,7 @@ object LDATest {
     val numStopwords = 20
     val vocabArray: Array[String] =
       termCounts
-       //.takeRight(termCounts.length - numStopwords)
+       .takeRight(termCounts.length - numStopwords)
         .map(_._1)
     //   vocab: Map term -> term index
     val vocab: Map[String, Int] = vocabArray.zipWithIndex.toMap
@@ -48,8 +48,8 @@ object LDATest {
     // Convert documents into term count vectors
     val documents: RDD[(Long, Vector)] =
       tokenized.zipWithIndex.map { case (tokens, id) =>
-        val counts = new mutable.HashMap[Int, Double]()
-        tokens.foreach { term =>
+               val counts = new mutable.HashMap[Int, Double]()
+        tokens.foreach { (term: String) =>
           if (vocab.contains(term)) {
             val idx = vocab(term)
             counts(idx) = counts.getOrElse(idx, 0.0) + 1.0
@@ -59,15 +59,15 @@ object LDATest {
         (id, Vectors.sparse(vocab.size, counts.toSeq))
       }
     // Set LDA parameters
-    val numTopics = 1
-    val lda = new LDA().setK(numTopics).setMaxIterations(90)
+    val numTopics = 3
+    val lda = new LDA().setK(numTopics).setMaxIterations(20).setOptimizer("EM")
 
     val ldaModel = lda.run(documents)
 
    // val avgLogLikelihood = ldaModel.logLikelihood / documents.count()
    val avgLogLikelihood = ldaModel.asInstanceOf[DistributedLDAModel].logLikelihood / documents.count()
     // Print topics, showing top-weighted 10 terms for each topic.
-    val topicIndices = ldaModel.describeTopics(maxTermsPerTopic = 2)
+    val topicIndices = ldaModel.describeTopics(maxTermsPerTopic = 5)
     topicIndices.foreach { case (terms, termWeights) =>
       println("TOPIC:")
       terms.zip(termWeights).foreach { case (term, weight) =>
