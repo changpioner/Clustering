@@ -27,7 +27,7 @@ object Gaussian {
     val gmm: GaussianMixtureModel = new GaussianMixture()
       //.setSeed(8192)
       .setConvergenceTol(0.0001)
-      .setInitialModel()
+      //.setInitialModel()
       .setMaxIterations(200)
       .setK(2)
       .run(parsedData)
