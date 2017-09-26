@@ -1,5 +1,8 @@
 package Clustering
+import org.apache.log4j.{Level, Logger}
 import org.apache.spark.mllib.linalg.Vectors
+import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.SparkSession
 
 import scala.collection.mutable
 /**
@@ -15,5 +18,19 @@ object test {
     val seq = map.toSeq
     val vector = Vectors.sparse(map.size,seq)
     println(vector)
+    Logger.getLogger("org.apache.spark").setLevel(Level.WARN)
+    val os = scala.sys.props.get("os.name").head
+    val spark = if(os.startsWith("Windows"))
+      SparkSession.builder().appName("test").master("local").getOrCreate()
+    else
+      SparkSession.builder().appName("test").getOrCreate()
+    val para: RDD[(Int, Double)] = spark.sparkContext.parallelize(map.toSeq,3)
+    para.foreachPartition(
+      par=>{
+        par.foreach(
+          x=>println(x)
+        )
+      }
+    )
   }
 }
