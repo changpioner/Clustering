@@ -10,7 +10,7 @@ import scala.collection.mutable
 /**
   * Created by Namhwik on 2017/9/20.
   */
-object LDATest {
+object MLlibLDA {
   System.setProperty("hadoop.home.dir","C:\\ruanjian\\hadoop")
 
   def main(args: Array[String]): Unit = {
@@ -47,9 +47,11 @@ object LDATest {
    // vocab.foreach(println(_))
     // Convert documents into term count vectors
     val documents: RDD[(Long, Vector)] =
-      tokenized.zipWithIndex.map { case (tokens, id) =>
-               val counts = new mutable.HashMap[Int, Double]()
-        tokens.foreach { (term: String) =>
+      tokenized.zipWithIndex.map {
+        case (tokens, id) =>
+        val counts = new mutable.HashMap[Int, Double]()
+        tokens.foreach {
+          (term: String) =>
           if (vocab.contains(term)) {
             val idx = vocab(term)
             counts(idx) = counts.getOrElse(idx, 0.0) + 1.0
@@ -59,16 +61,25 @@ object LDATest {
         (id, Vectors.sparse(vocab.size, counts.toSeq))
       }
     // Set LDA parameters
-    val numTopics = 3
-    val lda = new LDA().setK(numTopics).setMaxIterations(20).setOptimizer("EM")
-
+    val numTopics = 2
+    val lda = new LDA()
+      .setK(numTopics)
+      .setMaxIterations(50)
+      .setOptimizer("EM")
+      .setCheckpointInterval(5)
+     // .setDocConcentration(5.00)
+     // .setTopicConcentration(5.00)
+      .setSeed(1024L)
     val ldaModel = lda.run(documents)
 
    // val avgLogLikelihood = ldaModel.logLikelihood / documents.count()
-   val avgLogLikelihood = ldaModel.asInstanceOf[DistributedLDAModel].logLikelihood / documents.count()
+   val logLikelihood = ldaModel.asInstanceOf[DistributedLDAModel].logLikelihood // documents.count()
     // Print topics, showing top-weighted 10 terms for each topic.
+
+    println("logLikelihood: "+logLikelihood)
+    println("logPrior: "+ldaModel.asInstanceOf[DistributedLDAModel].logPrior)
     val topicIndices = ldaModel.describeTopics(maxTermsPerTopic = 5)
-    topicIndices.foreach { case (terms, termWeights) =>
+    topicIndices.foreach { case (terms: Array[Int], termWeights: Array[Double]) =>
       println("TOPIC:")
       terms.zip(termWeights).foreach { case (term, weight) =>
         println(s"${vocabArray(term.toInt)}\t$weight")

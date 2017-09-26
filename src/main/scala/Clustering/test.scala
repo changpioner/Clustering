@@ -32,5 +32,15 @@ object test {
         )
       }
     )
+    val sortedSet=   mutable.SortedSet[Double]()
+
+    sortedSet.add(5.56)
+    sortedSet.add(0.09)
+    sortedSet.add(7.62)
+    sortedSet.add(0.45)
+    val sortedArr= sortedSet.toArray
+    sortedArr.foreach(println(_))
+
+
   }
 }

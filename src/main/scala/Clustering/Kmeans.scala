@@ -8,7 +8,7 @@ import org.apache.spark.sql.SparkSession
 /**
  * @author ${user.name}
  */
-object App {
+object Kmeans {
   System.setProperty("hadoop.home.dir","C:\\ruanjian\\hadoop")
 
   def main(args : Array[String]): Unit = {
