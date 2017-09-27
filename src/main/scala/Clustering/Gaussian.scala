@@ -20,15 +20,16 @@ object Gaussian {
     else
       SparkSession.builder().appName("test").getOrCreate()
     val sc =spark.sparkContext
-    val data = sc.textFile("C:\\coding\\jars\\spark-2.2.0-bin-hadoop2.7\\data\\mllib\\kmeans_data.txt")
+    //spark.read.te
+    val data: RDD[String] = sc.textFile("C:\\coding\\jars\\spark-2.2.0-bin-hadoop2.7\\data\\mllib\\kmeans_data.txt")
     val parsedData: RDD[Vector] = data.map(s => Vectors.dense(s.trim.split(' ').map(_.toDouble))).cache()
 
    //创建一个高斯混合模型
     val gmm: GaussianMixtureModel = new GaussianMixture()
       //.setSeed(8192)
-      .setConvergenceTol(0.0001)
+      .setConvergenceTol(0.0001) //设置模型迭代阈值
       //.setInitialModel()
-      .setMaxIterations(200)
+      .setMaxIterations(200) //最大迭代次数
       .setK(2)
       .run(parsedData)
 
@@ -40,7 +41,9 @@ object Gaussian {
     val preResult2 =gmm
       .predictSoft(parsedData)
     println(preResult0)
+    println()
     println(preResult1)
+    println()
     preResult2.collect().foreach(x=>println(x.mkString(",")))
 
     for (i <- 0 until gmm.k) {
