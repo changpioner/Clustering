@@ -39,22 +39,30 @@ object MLLDA {
 
     // Split each document into a sequence of terms (words)
     val tokenized: RDD[Seq[String]] =
-      corpus.map(_.toLowerCase.split(" ")).map(_.filter(_.length > 3).filter(_.forall(java.lang.Character.isLetter)))
+      corpus.map(_.toLowerCase.split(" ")).map(_.filter(_.length >= 3)
+        //.filter(_.forall(java.lang.Character.isLetter))
+        )
+    val removeArr = Array(""
+     /* "very","there","will","super","this","have","with","some",
+      "them","because","their","then","going","they","after",
+      "the","has","are","too","for","you","good","make","once","not","but","new"*/
+    )
 
     // Choose the vocabulary.
     //   termCounts: Sorted list of (term, termCount) pairs
     val termCounts: Array[(String, Long)] =
-    tokenized.flatMap(_.map(_ -> 1L)).reduceByKey(_ + _).collect().sortBy(-_._2)
+    tokenized.flatMap(_.map(_ -> 1L)).reduceByKey(_ + _).collect().filter(x => !removeArr.contains(x._1)).sortBy(-_._2)
     //   vocabArray: Chosen vocab (removing common terms)
-    val numStopwords = 20
+    val numStopwords = 40
     val vocabArray: Array[String] =
       termCounts
         .takeRight(termCounts.length - numStopwords)
         .map(_._1)
     //   vocab: Map term -> term index
     val vocab: Map[String, Int] = vocabArray.zipWithIndex.toMap
-    vocab.foreach(println(_))
-    println(vocabArray.length)
+   // termCounts.foreach(println(_))
+    //vocabArray.foreach(println(_))
+    //println(vocabArray.length)
     tokenized.foreach(println(_))
     // vocab.foreach(println(_))
 
@@ -82,13 +90,13 @@ object MLLDA {
 
     // Trains a LDA model.
     val lda = new LDA()
-      .setK(2)
+      .setK(6)
       .setMaxIter(50)
       .setCheckpointInterval(5)
       .setOptimizer("EM")
      // .setDocConcentration(5.00)
      // .setTopicConcentration(5.00)
-      .setSeed(1024L)
+     // .setSeed(1024L)
     val model = lda.fit(dataset)
 
     val ll = model.logLikelihood(dataset)
@@ -97,7 +105,7 @@ object MLLDA {
     println(s"The upper bound on perplexity: $lp")
     //println(model.topicsMatrix)
     // Describe topics.
-    val topics = model.describeTopics(5)
+    val topics = model.describeTopics(6)
     println("The topics described by their top-weighted terms:")
     topics.printSchema()
     topics.show(false)

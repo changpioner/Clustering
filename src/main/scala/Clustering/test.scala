@@ -1,5 +1,8 @@
 package Clustering
 import org.apache.log4j.{Level, Logger}
+import org.apache.spark.SparkException
+import org.apache.spark.graphx._
+import org.apache.spark.mllib.clustering.KMeans
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
@@ -42,5 +45,40 @@ object test {
     sortedArr.foreach(println(_))
 
 
+  }
+
+  def normalize(graph: Graph[Double, Double]): Graph[Double, Double] = {
+    val vD: VertexRDD[Double] = graph.aggregateMessages[Double](
+      sendMsg = (ctx: EdgeContext[Double, Double, Double]) => {
+        val i: VertexId = ctx.srcId
+        val j: VertexId = ctx.dstId
+        val s: Double = ctx.attr
+        if (s < 0.0) {
+          throw new SparkException(s"Similarity must be nonnegative but found s($i, $j) = $s.")
+        }
+        if (s > 0.0) {
+          ctx.sendToSrc(s)
+        }
+      },
+      mergeMsg = _ + _,
+      TripletFields.EdgeOnly)
+    Graph(vD, graph.edges)
+      .mapTriplets(
+        e => e.attr / math.max(e.srcAttr, 0.0001),
+        new TripletFields(/* useSrc */ true,
+          /* useDst */ false,
+          /* useEdge */ true))
+  }
+
+
+
+  def kMeans(v: VertexRDD[Double], k: Int): VertexRDD[Int] = {
+    val points = v.mapValues(x => Vectors.dense(x)).cache()
+    val values = points.values
+    val model = new KMeans()
+      .setK(k)
+      .setSeed(0L)
+      .run(points.values)
+    points.mapValues(p => model.predict(p)).cache()
   }
 }
